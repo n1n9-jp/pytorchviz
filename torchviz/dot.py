@@ -39,29 +39,27 @@ def get_fn_name(fn, show_attrs, max_attr_chars):
 
 
 def make_dot(var, params=None, show_attrs=False, show_saved=False, max_attr_chars=50):
-    """ Produces Graphviz representation of PyTorch autograd graph.
+    
+    """ PyTorch autograd graphをGraphvizの表現で生成します。
 
-    If a node represents a backward function, it is gray. Otherwise, the node
-    represents a tensor and is either blue, orange, or green:
-     - Blue: reachable leaf tensors that requires grad (tensors whose `.grad`
-         fields will be populated during `.backward()`)
-     - Orange: saved tensors of custom autograd functions as well as those
-         saved by built-in backward nodes
-     - Green: tensor passed in as outputs
-     - Dark green: if any output is a view, we represent its base tensor with
-         a dark green node.
+    ノードが逆方向関数を表す場合、そのノードは灰色になります。
+    それ以外の場合、ノードはテンソルを表し、青、オレンジ、または緑のいずれかになります。:
+     - 青: grad を必要とする到達可能なリーフ テンソル
+           (`.grad` フィールドが `.backward()` 中に設定されるテンソル)
+     - オレンジ: カスタム autograd 関数の保存されたテンソルと、組み込みのバックワード ノードによって保存されたテンソル
+     - 緑: 出力として渡されるテンソル。
+     - 濃い緑色: 出力がビューの場合、その基本テンソルを濃い緑色のノードで表します。
 
-    Args:
-        var: output tensor
-        params: dict of (name, tensor) to add names to node that requires grad
-        show_attrs: whether to display non-tensor attributes of backward nodes
-            (Requires PyTorch version >= 1.9)
-        show_saved: whether to display saved tensor nodes that are not by custom
-            autograd functions. Saved tensor nodes for custom functions, if
-            present, are always displayed. (Requires PyTorch version >= 1.9)
-        max_attr_chars: if show_attrs is `True`, sets max number of characters
-            to display for any given attribute.
+    A引数:
+        var: 出力テンソル
+        params: grad を必要とするノードに名前を追加するための (name, tensor) の辞書
+        show_attrs: 逆方向ノードの非テンソル属性を表示するかどうか (PyTorch バージョン >= 1.9 が必要)
+        show_saved: カスタム autograd 関数によるものではない保存された tensor ノードを表示するかどうか。
+                    カスタム関数用に保存されたテンソル ノードが存在する場合、常に表示されます。
+                    (PyTorch バージョン 1.9 以上が必要)
+        max_attr_chars: show_attrs が「True」の場合、指定された属性に対して表示する最大文字数を設定します。
     """
+    
     if LooseVersion(torch.__version__) < LooseVersion("1.9") and \
         (show_attrs or show_saved):
         warnings.warn(
@@ -117,13 +115,13 @@ def make_dot(var, params=None, show_attrs=False, show_saved=False, max_attr_char
                             dot.node(str(id(t)), get_var_name(t, name), fillcolor='orange')
 
         if hasattr(fn, 'variable'):
-            # if grad_accumulator, add the node for `.variable`
+            # grad_accumulator の場合、`.variable` のノードを追加します
             var = fn.variable
             seen.add(var)
             dot.node(str(id(var)), get_var_name(var), fillcolor='lightblue')
             dot.edge(str(id(var)), str(id(fn)))
 
-        # add the node for this grad_fn
+        # この grad_fn のノードを追加します
         dot.node(str(id(fn)), get_fn_name(fn, show_attrs, max_attr_chars))
 
         # recurse
@@ -133,9 +131,11 @@ def make_dot(var, params=None, show_attrs=False, show_saved=False, max_attr_char
                     dot.edge(str(id(u[0])), str(id(fn)))
                     add_nodes(u[0])
 
-        # note: this used to show .saved_tensors in pytorch0.2, but stopped
-        # working* as it was moved to ATen and Variable-Tensor merged
-        # also note that this still works for custom autograd functions
+        """ 
+        注: これは、pytorch0.2 で .saved_tensors を表示していました。
+        しかし、ATen に移行され、Variable-Tensor がマージされたため機能しなくなりました。
+        また、これはカスタム autograd 関数ではまだ機能することに注意してください。
+        """
         if hasattr(fn, 'saved_tensors'):
             for t in fn.saved_tensors:
                 seen.add(t)
@@ -156,7 +156,7 @@ def make_dot(var, params=None, show_attrs=False, show_saved=False, max_attr_char
             dot.edge(str(id(var._base)), str(id(var)), style="dotted")
 
 
-    # handle multiple outputs
+    # 複数の出力を処理する
     if isinstance(var, tuple):
         for v in var:
             add_base_tensor(v)
@@ -169,7 +169,8 @@ def make_dot(var, params=None, show_attrs=False, show_saved=False, max_attr_char
 
 
 def make_dot_from_trace(trace):
-    """ This functionality is not available in pytorch core at
+    """
+    この機能は、次の pytorch コアでは利用できません。
     https://pytorch.org/docs/stable/tensorboard.html
     """
     # from tensorboardX
@@ -178,11 +179,11 @@ def make_dot_from_trace(trace):
 
 
 def resize_graph(dot, size_per_element=0.15, min_size=12):
-    """Resize the graph according to how much content it contains.
-
-    Modify the graph in place.
     """
-    # Get the approximate number of nodes and edges
+    グラフに含まれるコンテンツの量に応じてグラフのサイズを変更します。
+    グラフをその場で変更します。
+    """
+    # ノードとエッジのおおよその数を取得する
     num_rows = len(dot.body)
     content_size = num_rows * size_per_element
     size = max(min_size, content_size)
