@@ -126,22 +126,52 @@ def make_dot(var, params=None, show_attrs=False, show_saved=False, max_attr_char
             return
         seen.add(fn)
 
-        
+        # 真（True）である場合、逆伝播関数が保存したテンソルもグラフに追加される
         if show_saved:
+            
+            # fnのすべての属性に対してループを開始
             for attr in dir(fn):
+
+                # 属性名がSAVED_PREFIXで始まらない場合にループをスキップ
                 if not attr.startswith(SAVED_PREFIX):
                     continue
+                    
+                # fnのattr属性の値を取得
                 val = getattr(fn, attr)
+
+                # valをseen集合に追加
                 seen.add(val)
+                
+                # attrからSAVED_PREFIXを削除します。
                 attr = attr[len(SAVED_PREFIX):]
+
+                # valがPyTorchのテンソルであるかどうかを確認
                 if torch.is_tensor(val):
+                    
                     dot.edge(str(id(fn)), str(id(val)), dir="none")
+                    # 逆伝播関数（fn）とテンソル（val）の間にエッジを追加
+                    
                     dot.node(str(id(val)), get_var_name(val, attr), fillcolor='orange')
+                    # テンソル（val）を表すノードをグラフに追加
+                    # ノードのIDはテンソルのID（str(id(val))）
+                    # ノードのラベルはテンソルの名前（get_var_name(val, attr)）
+                    # ノードの色はオレンジ色（fillcolor='orange'）
+
+                # valがタプルであるかどうかを確認
                 if isinstance(val, tuple):
+                    
+                    # valタプルの各要素に対してループを開始
                     for i, t in enumerate(val):
+                        
+                        # tがPyTorchのテンソルであるかどうか
                         if torch.is_tensor(t):
+                            # テンソルの名前を生成
                             name = attr + '[%s]' % str(i)
+
+                            # 逆伝播関数（fn）とテンソル（t）の間にエッジ（つまり、グラフ上の接続）を追加
                             dot.edge(str(id(fn)), str(id(t)), dir="none")
+
+                            # テンソル（t）を表すノードをグラフに追加
                             dot.node(str(id(t)), get_var_name(t, name), fillcolor='orange')
 
         # fnがvariable属性を持っている場合（つまり、fnがテンソルの逆伝播関数である場合）に特定のコードブロックを実行
