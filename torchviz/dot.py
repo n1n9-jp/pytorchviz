@@ -5,17 +5,21 @@ import torch
 from torch.autograd import Variable
 import warnings
 
+
+
 # 名前付きフィールドを持つタプルのサブクラスを生成
+Node = namedtuple('Node', ('name', 'inputs', 'attr', 'op'))
 # - name: ノードの名前。これは通常、ノードが表すテンソルまたは操作の名前。
 # - inputs: ノードの入力。これは、ノードが依存する他のノードのリスト。
 # - attr: ノードの属性。これは、ノードの形状、タイプ、その他の情報を含む辞書。
 # - op: ノードが表す操作。これは、ノードが表すPyTorchの操作（例えば、加算、乗算、畳み込みなど）の名前。
 
-Node = namedtuple('Node', ('name', 'inputs', 'attr', 'op'))
-
 # Saved attrs for grad_fn (incl. saved variables) begin with `._saved_*`
 SAVED_PREFIX = "_saved_"
 
+
+
+# 逆伝播関数（grad_fn）の名前を取得
 def get_fn_name(fn, show_attrs, max_attr_chars):
     name = str(type(fn).__name__)
     if not show_attrs:
@@ -44,6 +48,8 @@ def get_fn_name(fn, show_attrs, max_attr_chars):
     return name + '\n' + sep + '\n' + params
 
 
+
+# 指定されたテンソルの計算グラフを作成
 def make_dot(var, params=None, show_attrs=False, show_saved=False, max_attr_chars=50):
     
     """ PyTorch autograd graphをGraphvizの表現で生成します。
@@ -94,14 +100,17 @@ def make_dot(var, params=None, show_attrs=False, show_saved=False, max_attr_char
     # スクリプト内で既に処理されたノードを追跡するために使用。set型（重複する要素を持たない、順序を持たない要素）
     seen = set()
 
+    # PyTorchテンソルのサイズを文字列に変換
     def size_to_str(size):
         return '(' + (', ').join(['%d' % v for v in size]) + ')'
 
+    # テンソルの名前とサイズを含む文字列を生成
     def get_var_name(var, name=None):
         if not name:
             name = param_map[id(var)] if id(var) in param_map else ''
         return '%s\n %s' % (name, size_to_str(var.size()))
 
+    # 指定された逆伝播関数とその入力をグラフに追加。add_base_tensor関数から呼び出される
     def add_nodes(fn):
 
         # seenに登録があるノードかどうか確認。重複でなければ追加する
@@ -158,7 +167,7 @@ def make_dot(var, params=None, show_attrs=False, show_saved=False, max_attr_char
                 dot.edge(str(id(t)), str(id(fn)), dir="none")
                 dot.node(str(id(t)), get_var_name(t), fillcolor='orange')
 
-
+    # 指定されたテンソルとその基本テンソルをグラフに追加
     def add_base_tensor(var, color='darkolivegreen1'):
         if var in seen:
             return
@@ -184,6 +193,8 @@ def make_dot(var, params=None, show_attrs=False, show_saved=False, max_attr_char
     return dot
 
 
+
+# 未使用
 def make_dot_from_trace(trace):
     """
     この機能は、次の pytorch コアでは利用できません。
@@ -194,6 +205,8 @@ def make_dot_from_trace(trace):
                               "can be found here: https://pytorch.org/docs/stable/tensorboard.html")
 
 
+
+# グラフに含まれるノードとエッジの数に基づいてグラフのサイズを変更
 def resize_graph(dot, size_per_element=0.15, min_size=12):
     """
     グラフに含まれるコンテンツの量に応じてグラフのサイズを変更します。
