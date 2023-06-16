@@ -80,11 +80,18 @@ def make_dot(var, params=None, show_attrs=False, show_saved=False, max_attr_char
             " saved tensors saved by custom autograd functions.)")
 
     if params is not None:
+        
+        # paramsのすべての値がVariableインスタンスであることを確認
         assert all(isinstance(p, Variable) for p in params.values())
+        
+        # params辞書のキーと値を反転した新しい辞書param_mapを作成
         param_map = {id(v): k for k, v in params.items()}
+        
     else:
         param_map = {}
 
+
+    
     # すべてのノードのデフォルトの属性を設定
     node_attr = dict(style='filled',
                      shape='box',
