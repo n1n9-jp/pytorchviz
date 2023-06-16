@@ -50,7 +50,7 @@ def make_dot(var, params=None, show_attrs=False, show_saved=False, max_attr_char
      - 緑: 出力として渡されるテンソル。
      - 濃い緑色: 出力がビューの場合、その基本テンソルを濃い緑色のノードで表します。
 
-    A引数:
+    引数:
         var: 出力テンソル
         params: grad を必要とするノードに名前を追加するための (name, tensor) の辞書
         show_attrs: 逆方向ノードの非テンソル属性を表示するかどうか (PyTorch バージョン >= 1.9 が必要)
@@ -73,6 +73,7 @@ def make_dot(var, params=None, show_attrs=False, show_saved=False, max_attr_char
     else:
         param_map = {}
 
+    # すべてのノードのデフォルトの属性を設定
     node_attr = dict(style='filled',
                      shape='box',
                      align='left',
@@ -80,7 +81,11 @@ def make_dot(var, params=None, show_attrs=False, show_saved=False, max_attr_char
                      ranksep='0.1',
                      height='0.2',
                      fontname='monospace')
+
+    # 空の有向グラフ（Digraph）オブジェクトを作成
     dot = Digraph(node_attr=node_attr, graph_attr=dict(size="12,12"))
+
+    # スクリプト内で既に処理されたノードを追跡するために使用。set型（重複する要素を持たない、順序を持たない要素）
     seen = set()
 
     def size_to_str(size):
@@ -92,11 +97,14 @@ def make_dot(var, params=None, show_attrs=False, show_saved=False, max_attr_char
         return '%s\n %s' % (name, size_to_str(var.size()))
 
     def add_nodes(fn):
+
+        # seenに登録があるノードかどうか確認。重複でなければ追加する
         assert not torch.is_tensor(fn)
         if fn in seen:
             return
         seen.add(fn)
 
+        
         if show_saved:
             for attr in dir(fn):
                 if not attr.startswith(SAVED_PREFIX):
@@ -114,6 +122,8 @@ def make_dot(var, params=None, show_attrs=False, show_saved=False, max_attr_char
                             dot.edge(str(id(fn)), str(id(t)), dir="none")
                             dot.node(str(id(t)), get_var_name(t, name), fillcolor='orange')
 
+        # fnがvariable属性を持っている場合（つまり、fnがテンソルの逆伝播関数である場合）に特定のコードブロックを実行
+        # テンソルとその逆伝播関数をグラフに追加するための手段
         if hasattr(fn, 'variable'):
             # grad_accumulator の場合、`.variable` のノードを追加します
             var = fn.variable
@@ -124,7 +134,7 @@ def make_dot(var, params=None, show_attrs=False, show_saved=False, max_attr_char
         # この grad_fn のノードを追加します
         dot.node(str(id(fn)), get_fn_name(fn, show_attrs, max_attr_chars))
 
-        # recurse
+        # fnがnext_functions属性を持っている場合（つまり、fnが他の逆伝播関数に依存している場合）に特定のコードブロックを実行
         if hasattr(fn, 'next_functions'):
             for u in fn.next_functions:
                 if u[0] is not None:
