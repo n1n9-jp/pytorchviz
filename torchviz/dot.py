@@ -205,14 +205,23 @@ def make_dot(var, params=None, show_attrs=False, show_saved=False, max_attr_char
                 dot.node(str(id(t)), get_var_name(t), fillcolor='orange')
 
     # 指定されたテンソルとその基本テンソルをグラフに追加
+    # 引数は追加するテンソル（var）とノードの色（color）
     def add_base_tensor(var, color='darkolivegreen1'):
+        
+        # varが既にseen集合に存在する場合に関数を終了
         if var in seen:
             return
         seen.add(var)
+        
+        # varを表すノードをグラフに追加
         dot.node(str(id(var)), get_var_name(var), fillcolor=color)
+
+        # varが逆伝播関数（grad_fn）を持つ場合
         if (var.grad_fn):
             add_nodes(var.grad_fn)
             dot.edge(str(id(var.grad_fn)), str(id(var)))
+
+        # varが他のテンソルのビューである場合
         if var._is_view():
             add_base_tensor(var._base, color='darkolivegreen3')
             dot.edge(str(id(var._base)), str(id(var)), style="dotted")
