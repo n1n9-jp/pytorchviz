@@ -5,6 +5,12 @@ import torch
 from torch.autograd import Variable
 import warnings
 
+# 名前付きフィールドを持つタプルのサブクラスを生成
+# - name: ノードの名前。これは通常、ノードが表すテンソルまたは操作の名前。
+# - inputs: ノードの入力。これは、ノードが依存する他のノードのリスト。
+# - attr: ノードの属性。これは、ノードの形状、タイプ、その他の情報を含む辞書。
+# - op: ノードが表す操作。これは、ノードが表すPyTorchの操作（例えば、加算、乗算、畳み込みなど）の名前。
+
 Node = namedtuple('Node', ('name', 'inputs', 'attr', 'op'))
 
 # Saved attrs for grad_fn (incl. saved variables) begin with `._saved_*`
