@@ -180,11 +180,13 @@ def make_dot(var, params=None, show_attrs=False, show_saved=False, max_attr_char
             # grad_accumulator の場合、`.variable` のノードを追加します
             var = fn.variable
             seen.add(var)
-            dot.node(str(id(var)), get_var_name(var), fillcolor='lightblue')
+            # dot.node(str(id(var)), get_var_name(var), fillcolor='lightblue')
+            dot.node(str(id(var)), get_var_name(var), fillcolor='#3EA8A6')
             dot.edge(str(id(var)), str(id(fn)))
 
         # この grad_fn のノードを追加します
-        dot.node(str(id(fn)), get_fn_name(fn, show_attrs, max_attr_chars))
+        # dot.node(str(id(fn)), get_fn_name(fn, show_attrs, max_attr_chars))
+        dot.node(str(id(fn)), get_fn_name(fn, show_attrs, max_attr_chars), fillcolor='DD8629')
 
         # fnがnext_functions属性を持っている場合（つまり、fnが他の逆伝播関数に依存している場合）に特定のコードブロックを実行
         if hasattr(fn, 'next_functions'):
